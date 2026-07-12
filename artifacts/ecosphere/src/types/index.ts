@@ -264,6 +264,18 @@ export interface ComplianceIssue extends BaseRecord {
   isOverdue: boolean;
 }
 
+// ── ESGScoreHistory Model (Snapshot tracking) ────────────────────────────────
+
+export interface ESGScoreHistory extends BaseRecord {
+  id: string;
+  date: string; // YYYY-MM
+  environmentalScore: number;
+  socialScore: number;
+  governanceScore: number;
+  overallScore: number;
+  departmentId: string | null; // null = Company-wide
+}
+
 export type UserRole = 'Sustainability Officer' | 'Employee' | 'Visitor';
 
 // ── Store shape ────────────────────────────────────────────────────────────────
@@ -284,6 +296,7 @@ export interface EcoSphereState {
   policyAcknowledgements: PolicyAcknowledgement[];
   audits: Audit[];
   complianceIssues: ComplianceIssue[];
+  esgScoreHistory: ESGScoreHistory[];
   settings: AppSettings & {
     hrisIntegrationConnected: boolean; // Integration flag
     hrisProvider: string | null;

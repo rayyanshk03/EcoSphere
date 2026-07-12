@@ -195,6 +195,21 @@ const SEED_NOTIFICATIONS: AppNotification[] = [
   { id: 'n-seed-4', title: 'Pending Challenge Submission', message: 'Rahul Sharma submitted Zero Waste Lunch proof for review.', timestamp: now, read: false, type: 'info' },
 ];
 
+const SEED_SCORE_HISTORY: ESGScoreHistory[] = [
+  { id: 'h-1', date: '2025-07', environmentalScore: 70, socialScore: 71, governanceScore: 76, overallScore: 72, departmentId: null, createdAt: now, updatedAt: now, deletedAt: null },
+  { id: 'h-2', date: '2025-08', environmentalScore: 71, socialScore: 72, governanceScore: 77, overallScore: 73, departmentId: null, createdAt: now, updatedAt: now, deletedAt: null },
+  { id: 'h-3', date: '2025-09', environmentalScore: 72, socialScore: 72, governanceScore: 76, overallScore: 73, departmentId: null, createdAt: now, updatedAt: now, deletedAt: null },
+  { id: 'h-4', date: '2025-10', environmentalScore: 73, socialScore: 74, governanceScore: 78, overallScore: 75, departmentId: null, createdAt: now, updatedAt: now, deletedAt: null },
+  { id: 'h-5', date: '2025-11', environmentalScore: 74, socialScore: 75, governanceScore: 79, overallScore: 76, departmentId: null, createdAt: now, updatedAt: now, deletedAt: null },
+  { id: 'h-6', date: '2025-12', environmentalScore: 75, socialScore: 76, governanceScore: 80, overallScore: 77, departmentId: null, createdAt: now, updatedAt: now, deletedAt: null },
+  { id: 'h-7', date: '2026-01', environmentalScore: 76, socialScore: 76, governanceScore: 82, overallScore: 78, departmentId: null, createdAt: now, updatedAt: now, deletedAt: null },
+  { id: 'h-8', date: '2026-02', environmentalScore: 77, socialScore: 78, governanceScore: 81, overallScore: 79, departmentId: null, createdAt: now, updatedAt: now, deletedAt: null },
+  { id: 'h-9', date: '2026-03', environmentalScore: 78, socialScore: 78, governanceScore: 82, overallScore: 79, departmentId: null, createdAt: now, updatedAt: now, deletedAt: null },
+  { id: 'h-10', date: '2026-04', environmentalScore: 79, socialScore: 80, governanceScore: 81, overallScore: 80, departmentId: null, createdAt: now, updatedAt: now, deletedAt: null },
+  { id: 'h-11', date: '2026-05', environmentalScore: 80, socialScore: 81, governanceScore: 83, overallScore: 81, departmentId: null, createdAt: now, updatedAt: now, deletedAt: null },
+  { id: 'h-12', date: '2026-06', environmentalScore: 81, socialScore: 80, governanceScore: 84, overallScore: 82, departmentId: null, createdAt: now, updatedAt: now, deletedAt: null },
+];
+
 const INITIAL_STATE: EcoSphereState = {
   departments: SEED_DEPARTMENTS,
   emissionFactors: SEED_EMISSION_FACTORS,
@@ -211,6 +226,7 @@ const INITIAL_STATE: EcoSphereState = {
   policyAcknowledgements: SEED_ACKNOWLEDGEMENTS,
   audits: SEED_AUDITS,
   complianceIssues: SEED_COMPLIANCE_ISSUES,
+  esgScoreHistory: SEED_SCORE_HISTORY,
   settings: {
     autoEmissionCalculation: false,
     envWeight: 40,
@@ -328,7 +344,8 @@ type Action =
   | { type: 'RUN_OVERDUE_CHECK' }
   | { type: 'UPDATE_POLICY';        payload: Pick<ESGPolicy, 'id'> & Partial<ESGPolicy> & { triggerReminder?: boolean } }
   | { type: 'ADD_AUDIT';            payload: Omit<Audit, 'id' | 'status' | 'reportFile' | 'createdAt' | 'updatedAt' | 'deletedAt'> }
-  | { type: 'COMPLETE_AUDIT';       payload: { auditId: string; score: string; reportFile: string; findings: string; departmentId: string; departmentName: string } };
+  | { type: 'COMPLETE_AUDIT';       payload: { auditId: string; score: string; reportFile: string; findings: string; departmentId: string; departmentName: string } }
+  | { type: 'WRITE_MONTHLY_SNAPSHOT'; payload: { date: string; environmentalScore: number; socialScore: number; governanceScore: number; overallScore: number } };
 
 // ── Reducer ───────────────────────────────────────────────────────────────────
 
@@ -1008,6 +1025,27 @@ function reducer(state: EcoSphereState, action: Action): EcoSphereState {
       };
     }
 
+    case 'WRITE_MONTHLY_SNAPSHOT': {
+      const newSnapshot: ESGScoreHistory = {
+        id: `h-${Date.now()}`,
+        date: action.payload.date,
+        environmentalScore: action.payload.environmentalScore,
+        socialScore: action.payload.socialScore,
+        governanceScore: action.payload.governanceScore,
+        overallScore: action.payload.overallScore,
+        departmentId: null,
+        createdAt: ts,
+        updatedAt: ts,
+        deletedAt: null,
+      };
+
+      const filtered = state.esgScoreHistory.filter(h => h.date !== action.payload.date);
+      return {
+        ...state,
+        esgScoreHistory: [...filtered, newSnapshot],
+      };
+    }
+
     default:
       return state;
   }
@@ -1037,6 +1075,7 @@ interface EcoSphereContextValue {
   activeAcknowledgements: PolicyAcknowledgement[];
   activeAudits: Audit[];
   activeComplianceIssues: ComplianceIssue[];
+  activeHistory: ESGScoreHistory[];
 }
 
 const EcoSphereContext = createContext<EcoSphereContextValue | null>(null);
@@ -1185,6 +1224,7 @@ export function EcoSphereProvider({ children }: { children: ReactNode }) {
     activeAcknowledgements,
     activeAudits,
     activeComplianceIssues,
+    activeHistory: state.esgScoreHistory || SEED_SCORE_HISTORY,
   };
 
   return (
